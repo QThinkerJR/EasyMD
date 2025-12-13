@@ -18,7 +18,7 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-const AppVersion = "1.0.2"
+const AppVersion = "1.0.3"
 
 // App struct
 type App struct {
@@ -93,6 +93,15 @@ func (a *App) OpenFile() (OpenFileResult, error) {
 		Content: result,
 		Path:    selectedFile,
 	}, nil
+}
+
+// ReadFile reads the content of the file at the given path
+func (a *App) ReadFile(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
 
 // SaveFile saves content to the specified file path
