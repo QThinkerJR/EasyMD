@@ -1,0 +1,22 @@
+{
+  "name": "easymd-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vavt/v3-extension": "^4.0.0",
+    "markdown-it-mark": "^4.0.0",
+    "md-editor-v3": "^6.2.1",
+    "tdesign-vue-next": "^1.17.6",
+    "vue": "^3.2.37"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^3.0.3",
+    "vite": "^3.0.7"
+  }
+}
