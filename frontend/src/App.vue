@@ -3,12 +3,14 @@ import { reactive, ref, watch, onMounted, onUnmounted } from 'vue'
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next'
 import MarkdownEditor from './components/MarkdownEditor.vue'
 import Toolbar from './components/Toolbar.vue'
-import { OpenFile, ReadFile, SaveFile, SaveFileAs, ExportToHTMLAs } from '../wailsjs/go/main/App.js'
+import { OpenFile, ReadFile, SaveFile, SaveFileAs, ExportToHTMLAs, SetLanguage } from '../wailsjs/go/main/App.js'
 import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js'
-import { detectLanguage, t, currentLocale } from './i18n'
+import { detectLanguage, t, currentLocale, state } from './i18n'
 
 // 初始化语言
 detectLanguage()
+// 同步语言设置到后端
+SetLanguage(state.locale)
 
 // 应用状态
 const appState = reactive({
@@ -220,6 +222,7 @@ const saveFile = async () => {
     }
   } catch (error) {
     console.error('保存文件失败:', error)
+    MessagePlugin.error({ content: t('saveFailed'), placement: 'center' })
   }
 }
 
@@ -234,6 +237,7 @@ const saveFileAs = async () => {
     }
   } catch (error) {
     console.error('另存为失败:', error)
+    MessagePlugin.error({ content: t('saveFailed'), placement: 'center' })
   }
 }
 
@@ -242,11 +246,20 @@ const exportToHTML = async () => {
   try {
     // 使用 Markdown 原始内容进行导出，而不是渲染后的 HTML
     // 这样后端可以正确处理 Mermaid 和 ECharts 代码块
-    await ExportToHTMLAs(appState.markdownContent)
-    MessagePlugin.success({ content: t('exportSuccess'), placement: 'center' })
+    const result = await ExportToHTMLAs(appState.markdownContent)
+    if (result) {
+      MessagePlugin.success({ content: t('exportSuccess'), placement: 'center' })
+    }
   } catch (error) {
     console.error('导出HTML失败:', error)
     MessagePlugin.error({ content: t('exportFailed'), placement: 'center' })
+  }
+}
+
+// 导出为PDF
+const exportToPDF = () => {
+  if (editorRef.value) {
+    editorRef.value.exportPDF()
   }
 }
 
@@ -296,6 +309,7 @@ const getWindowTitle = () => {
       @save-file="saveFile"
       @save-file-as="saveFileAs"
       @export-html="exportToHTML"
+      @export-pdf="exportToPDF"
       @toggle-theme="toggleTheme"
     />
     

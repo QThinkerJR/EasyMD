@@ -18,22 +18,30 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-const AppVersion = "1.0.5"
+const AppVersion = "1.0.6"
 
 // App struct
 type App struct {
-	ctx context.Context
+	ctx  context.Context
+	lang string
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	return &App{}
+	return &App{
+		lang: LangZhCN,
+	}
 }
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+// SetLanguage sets the application language
+func (a *App) SetLanguage(lang string) {
+	a.lang = lang
 }
 
 // Greet returns a greeting for the given name
@@ -56,17 +64,19 @@ type OpenFileResult struct {
 func (a *App) OpenFile() (OpenFileResult, error) {
 	defaultPath, _ := os.Getwd()
 
+	texts := GetTextResources(a.lang)
+
 	dialogOptions := runtime.OpenDialogOptions{
 		DefaultDirectory: defaultPath,
 		DefaultFilename:  "",
-		Title:            "打开Markdown文件",
+		Title:            texts.OpenFileTitle,
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Markdown Files (*.md)",
+				DisplayName: texts.MarkdownFilesFilter,
 				Pattern:     "*.md",
 			},
 			{
-				DisplayName: "All Files (*.*)",
+				DisplayName: texts.AllFilesFilter,
 				Pattern:     "*.*",
 			},
 		},
@@ -78,7 +88,7 @@ func (a *App) OpenFile() (OpenFileResult, error) {
 	}
 
 	if selectedFile == "" {
-		return OpenFileResult{}, fmt.Errorf("未选择文件")
+		return OpenFileResult{}, fmt.Errorf(texts.NoFileSelected)
 	}
 
 	content, err := os.ReadFile(selectedFile)
@@ -113,17 +123,19 @@ func (a *App) SaveFile(content, path string) error {
 func (a *App) SaveFileAs(content string) (string, error) {
 	defaultPath, _ := os.Getwd()
 
+	texts := GetTextResources(a.lang)
+
 	dialogOptions := runtime.SaveDialogOptions{
 		DefaultDirectory: defaultPath,
 		DefaultFilename:  "untitled.md",
-		Title:            "保存Markdown文件",
+		Title:            texts.SaveFileTitle,
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Markdown Files (*.md)",
+				DisplayName: texts.MarkdownFilesFilter,
 				Pattern:     "*.md",
 			},
 			{
-				DisplayName: "All Files (*.*)",
+				DisplayName: texts.AllFilesFilter,
 				Pattern:     "*.*",
 			},
 		},
@@ -135,7 +147,7 @@ func (a *App) SaveFileAs(content string) (string, error) {
 	}
 
 	if selectedFile == "" {
-		return "", fmt.Errorf("未选择保存位置")
+		return "", nil
 	}
 
 	// Ensure .md extension
@@ -190,18 +202,18 @@ func (a *App) ExportToHTML(content, path string) error {
 	}
 
 	// HTML 模板
-	fullHTML := buildHTMLTemplate(buf.String())
+	fullHTML := buildHTMLTemplate(buf.String(), GetTextResources(a.lang))
 	return os.WriteFile(path, []byte(fullHTML), 0644)
 }
 
 // buildHTMLTemplate 构建完整的 HTML 模板
-func buildHTMLTemplate(content string) string {
+func buildHTMLTemplate(content string, texts TextResources) string {
 	return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="` + texts.HtmlLang + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Export</title>
+    <title>` + texts.HtmlTitle + `</title>
     
     <!-- Mermaid -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
@@ -335,17 +347,19 @@ func buildHTMLTemplate(content string) string {
 func (a *App) ExportToHTMLAs(content string) (string, error) {
 	defaultPath, _ := os.Getwd()
 
+	texts := GetTextResources(a.lang)
+
 	dialogOptions := runtime.SaveDialogOptions{
 		DefaultDirectory: defaultPath,
 		DefaultFilename:  "export.html",
-		Title:            "导出为HTML",
+		Title:            texts.ExportHtmlTitle,
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "HTML Files (*.html)",
+				DisplayName: texts.HtmlFilesFilter,
 				Pattern:     "*.html",
 			},
 			{
-				DisplayName: "All Files (*.*)",
+				DisplayName: texts.AllFilesFilter,
 				Pattern:     "*.*",
 			},
 		},
@@ -357,7 +371,7 @@ func (a *App) ExportToHTMLAs(content string) (string, error) {
 	}
 
 	if selectedFile == "" {
-		return "", fmt.Errorf("未选择保存位置")
+		return "", nil
 	}
 
 	// Ensure .html extension

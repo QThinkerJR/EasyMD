@@ -117,6 +117,17 @@ const saveButtonText = computed(() => {
           </Button>
         </Tooltip>
 
+        <Tooltip :content="t('exportPdf') || '导出 PDF'">
+          <Button variant="text" @click="$emit('export-pdf')">
+            <template #icon>
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v2.5zm2.5 3.5h-2.5V7H14v2h-1.5v1.5H14v2zm4-3H16.5v1.5H18v2h-1.5V15H15V7h3v2.5zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/>
+              </svg>
+            </template>
+            {{ t('exportPdf') || 'PDF' }}
+          </Button>
+        </Tooltip>
+
         <Tooltip :content="t('about')">
           <Button variant="text" @click="showAbout = true">
             <template #icon>

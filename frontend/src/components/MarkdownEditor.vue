@@ -103,12 +103,41 @@ onMounted(() => {
   setTimeout(hideImageOptions, 1000)
 })
 
+// 导出 PDF 方法
+const exportPDF = () => {
+  // 尝试查找导出PDF按钮并点击
+  // 首先尝试通过 title 查找
+  let btn = document.querySelector('.md-editor-toolbar-item[title*="PDF"]')
+  
+  if (!btn) {
+    // 尝试查找 svg 的 data-def 属性或其他特征
+    // 这里做一个简单的遍历查找
+    const items = document.querySelectorAll('.md-editor-toolbar-item')
+    for (const item of items) {
+      if (item.getAttribute('title')?.includes('PDF')) {
+        btn = item
+        break
+      }
+    }
+  }
+
+  if (btn) {
+    btn.click()
+  } else {
+    console.warn('PDF export button not found in toolbar')
+    // 备用方案：如果按钮有特定的索引位置，可以尝试硬编码索引
+    // 但由于有隐藏元素和分隔符，这不可靠
+  }
+}
 
 // 暴露 onHtmlChanged 事件
 const onHtmlChanged = (html) => {
   emit('htmlChanged', html)
 }
 
+defineExpose({
+  exportPDF
+})
 </script>
 
 <template>
@@ -282,5 +311,53 @@ const onHtmlChanged = (html) => {
 :deep(.emojis) {
   width: auto !important;
   max-width: 440px !important;
+}
+</style>
+
+<style>
+/* 针对 ExportPDF 弹窗的全局样式覆盖 - 强制左对齐 */
+.export-pdf-modal .md-editor-preview-wrapper,
+.export-pdf-content .md-editor-preview-wrapper,
+#export-pdf-preview {
+  display: block !important;
+  text-align: left !important;
+  padding: 0 20px !important;
+}
+
+.export-pdf-modal .md-editor-preview,
+.export-pdf-content .md-editor-preview {
+  text-align: left !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* 覆盖模态框主体的对齐方式 */
+.export-pdf-modal .md-editor-modal-body {
+  text-align: left !important;
+  display: block !important;
+}
+
+/* 打印时的样式 */
+@media print {
+  .export-pdf-content .md-editor-preview-wrapper,
+  .export-pdf-content .md-editor-preview,
+  #export-pdf-preview {
+    text-align: left !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* 确保每一页的内容也是左对齐 */
+  .md-editor-preview h1, 
+  .md-editor-preview h2, 
+  .md-editor-preview h3, 
+  .md-editor-preview p,
+  .md-editor-preview ul,
+  .md-editor-preview ol,
+  .md-editor-preview table {
+    text-align: left !important;
+  }
 }
 </style>
