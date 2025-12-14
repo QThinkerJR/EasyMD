@@ -5,6 +5,10 @@ import MarkdownEditor from './components/MarkdownEditor.vue'
 import Toolbar from './components/Toolbar.vue'
 import { OpenFile, ReadFile, SaveFile, SaveFileAs, ExportToHTMLAs } from '../wailsjs/go/main/App.js'
 import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js'
+import { detectLanguage, t, currentLocale } from './i18n'
+
+// 初始化语言
+detectLanguage()
 
 // 应用状态
 const appState = reactive({
@@ -73,19 +77,19 @@ const handleFileDrop = async (x, y, paths) => {
           appState.currentFilePath = filePath
           appState.isModified = false
           console.log('拖拽打开文件成功，路径已更新为:', appState.currentFilePath)
-          MessagePlugin.success({ content: '打开成功: ' + filePath, placement: 'center' })
+          MessagePlugin.success({ content: t('openSuccess') + ': ' + filePath, placement: 'center' })
         } else {
            console.error('读取文件内容为空或 undefined')
-           MessagePlugin.warning({ content: '文件内容为空', placement: 'center' })
+           MessagePlugin.warning({ content: t('fileContentEmpty'), placement: 'center' })
         }
       } catch (error) {
         console.error('拖拽打开文件失败:', error)
-        MessagePlugin.error({ content: '打开文件失败: ' + error.message, placement: 'center' })
+        MessagePlugin.error({ content: t('openFailed') + ': ' + error.message, placement: 'center' })
       } finally {
         appState.isLoading = false
       }
     } else {
-      MessagePlugin.warning({ content: '只支持 Markdown 文件', placement: 'center' })
+      MessagePlugin.warning({ content: t('onlyMarkdown'), placement: 'center' })
     }
   } else {
     console.log('拖拽事件未包含有效文件路径')
@@ -204,14 +208,14 @@ const saveFile = async () => {
     if (appState.currentFilePath) {
       await SaveFile(appState.markdownContent, appState.currentFilePath)
       appState.isModified = false
-      MessagePlugin.success({ content: '保存成功', placement: 'center' })
+      MessagePlugin.success({ content: t('saveSuccess'), placement: 'center' })
     } else {
       // 如果没有当前文件路径，则另存为
       const filePath = await SaveFileAs(appState.markdownContent)
       if (filePath) {
         appState.currentFilePath = filePath
         appState.isModified = false
-        MessagePlugin.success({ content: '保存成功', placement: 'center' })
+        MessagePlugin.success({ content: t('saveSuccess'), placement: 'center' })
       }
     }
   } catch (error) {
@@ -226,7 +230,7 @@ const saveFileAs = async () => {
     if (filePath) {
       appState.currentFilePath = filePath
       appState.isModified = false
-      MessagePlugin.success({ content: '保存成功', placement: 'center' })
+      MessagePlugin.success({ content: t('saveSuccess'), placement: 'center' })
     }
   } catch (error) {
     console.error('另存为失败:', error)
@@ -239,10 +243,10 @@ const exportToHTML = async () => {
     // 使用 Markdown 原始内容进行导出，而不是渲染后的 HTML
     // 这样后端可以正确处理 Mermaid 和 ECharts 代码块
     await ExportToHTMLAs(appState.markdownContent)
-    MessagePlugin.success({ content: '导出成功', placement: 'center' })
+    MessagePlugin.success({ content: t('exportSuccess'), placement: 'center' })
   } catch (error) {
     console.error('导出HTML失败:', error)
-    MessagePlugin.error({ content: '导出HTML失败', placement: 'center' })
+    MessagePlugin.error({ content: t('exportFailed'), placement: 'center' })
   }
 }
 
@@ -251,10 +255,10 @@ const newFile = () => {
   if (appState.isModified) {
     // 使用 TDesign 的 Dialog 组件显示确认对话框
     const dialogInstance = DialogPlugin.confirm({
-      header: '提示',
-      body: '当前文件尚未保存，是否继续新建？未保存的内容将会丢失。',
-      confirmBtn: '继续',
-      cancelBtn: '取消',
+      header: t('prompt'),
+      body: t('unsavedWarning'),
+      confirmBtn: t('continue'),
+      cancelBtn: t('cancel'),
       onConfirm: () => {
         appState.markdownContent = ''
         appState.currentFilePath = ''
@@ -275,9 +279,9 @@ const newFile = () => {
 // 获取窗口标题
 const getWindowTitle = () => {
   const fileName = appState.currentFilePath ? 
-    appState.currentFilePath.split(/[/\\]/).pop() : '未命名'
+    appState.currentFilePath.split(/[/\\]/).pop() : t('untitled')
   const modified = appState.isModified ? ' *' : ''
-  return `${fileName}${modified} - Markdown编辑器`
+  return `${fileName}${modified} - ${t('editorTitle')}`
 }
 </script>
 
@@ -301,6 +305,7 @@ const getWindowTitle = () => {
         v-model="appState.markdownContent"
         :is-loading="appState.isLoading"
         :theme="appState.theme"
+        :language="currentLocale"
         @html-changed="onHtmlChanged"
       />
     </div>

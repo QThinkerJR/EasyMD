@@ -3,6 +3,7 @@ import { computed, ref, onMounted } from 'vue'
 import { Button, Space, Tooltip, Dialog } from 'tdesign-vue-next'
 import { GetAppVersion } from '../../wailsjs/go/main/App'
 import { BrowserOpenURL } from '../../wailsjs/runtime/runtime'
+import { t } from '../i18n'
 
 const props = defineProps({
   currentFilePath: {
@@ -43,13 +44,13 @@ onMounted(async () => {
 
 // 获取文件名
 const fileName = computed(() => {
-  if (!props.currentFilePath) return '未命名'
+  if (!props.currentFilePath) return t('untitled')
   return props.currentFilePath.split(/[/\\]/).pop()
 })
 
 // 获取保存按钮文本
 const saveButtonText = computed(() => {
-  return props.currentFilePath ? '保存' : '保存'
+  return props.currentFilePath ? t('save') : t('save')
 })
 </script>
 
@@ -57,25 +58,25 @@ const saveButtonText = computed(() => {
   <div class="toolbar" :class="{ 'dark': theme === 'dark' }">
     <div class="toolbar-left">
       <Space>
-        <Tooltip content="新建文件">
+        <Tooltip :content="t('newFile')">
           <Button variant="text" @click="$emit('new-file')">
             <template #icon>
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
               </svg>
             </template>
-            新建
+            {{ t('new') }}
           </Button>
         </Tooltip>
         
-        <Tooltip content="打开文件">
+        <Tooltip :content="t('openFile')">
           <Button variant="text" @click="$emit('open-file')">
             <template #icon>
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
               </svg>
             </template>
-            打开
+            {{ t('open') }}
           </Button>
         </Tooltip>
         
@@ -94,36 +95,36 @@ const saveButtonText = computed(() => {
           </Button>
         </Tooltip>
         
-        <Tooltip content="另存为">
+        <Tooltip :content="t('saveAs')">
           <Button variant="text" @click="$emit('save-file-as')">
             <template #icon>
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
               </svg>
             </template>
-            另存为
+            {{ t('saveAs') }}
           </Button>
         </Tooltip>
         
-        <Tooltip content="导出为HTML">
+        <Tooltip :content="t('exportHtml')">
           <Button variant="text" @click="$emit('export-html')">
             <template #icon>
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
               </svg>
             </template>
-            导出HTML
+            {{ t('exportHtml') }}
           </Button>
         </Tooltip>
 
-        <Tooltip content="关于">
+        <Tooltip :content="t('about')">
           <Button variant="text" @click="showAbout = true">
             <template #icon>
               <svg viewBox="0 0 24 24" width="16" height="16">
                 <path fill="currentColor" d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
               </svg>
             </template>
-            关于
+            {{ t('about') }}
           </Button>
         </Tooltip>
       </Space>
@@ -131,7 +132,7 @@ const saveButtonText = computed(() => {
     
     <div class="toolbar-right">
       <Space>
-        <Tooltip :content="theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'">
+        <Tooltip :content="theme === 'light' ? t('themeTooltipDark') : t('themeTooltipLight')">
           <Button variant="text" @click="$emit('toggle-theme')">
             <template #icon>
               <!-- Sun Icon for Light Mode -->
@@ -154,16 +155,17 @@ const saveButtonText = computed(() => {
 
     <Dialog
       v-model:visible="showAbout"
-      header="关于 EasyMD"
+      :header="t('aboutTitle')"
       :footer="false"
       width="400px"
+      :z-index="99999"
     >
       <div class="about-content">
-        <p><strong>软件名称:</strong> EasyMD</p>
-        <p><strong>版本:</strong> {{ appVersion }}</p>
-        <p><strong>作者:</strong> QThinker ( <a href="#" @click.prevent="BrowserOpenURL('mailto:ray@qthinker.net')">ray@qthinker.net</a> )</p>
+        <p><strong>{{ t('softwareName') }}:</strong> EasyMD</p>
+        <p><strong>{{ t('version') }}:</strong> {{ appVersion }}</p>
+        <p><strong>{{ t('author') }}:</strong> QThinker ( <a href="#" @click.prevent="BrowserOpenURL('mailto:ray@qthinker.net')">ray@qthinker.net</a> )</p>
         <div class="libs-section">
-          <p><strong>使用的第三方库:</strong></p>
+          <p><strong>{{ t('thirdPartyLibs') }}:</strong></p>
           <div class="lib-group">
             <p class="lib-title">Go:</p>
             <ul>

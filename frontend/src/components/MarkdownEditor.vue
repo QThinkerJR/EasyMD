@@ -5,6 +5,7 @@ import 'md-editor-v3/lib/style.css'
 import { Emoji, Mark, ExportPDF } from '@vavt/v3-extension'
 import '@vavt/v3-extension/lib/asset/style.css'
 import MarkExtension from 'markdown-it-mark'
+import { t } from '../i18n'
 
 // 配置 markdown-it 扩展
 config({
@@ -25,6 +26,10 @@ const props = defineProps({
   theme: {
     type: String,
     default: 'light'
+  },
+  language: {
+    type: String,
+    default: 'zh-CN'
   }
 })
 
@@ -84,7 +89,8 @@ onMounted(() => {
     dropdownItems.forEach((item, index) => {
       const text = item.textContent?.trim() || ''
       // 隐藏包含“上传”或“裁剪”的选项
-      if (text.includes('上传') || text.includes('裁剪')) {
+      const keywords = ['上传', '裁剪', 'Upload', 'Clip']
+      if (keywords.some(k => text.includes(k))) {
         item.style.display = 'none'
         console.log(`隐藏选项 ${index}:`, text)
       }
@@ -113,6 +119,7 @@ const onHtmlChanged = (html) => {
         ref="editorRef"
         v-model="content"
         :theme="theme"
+        :language="language"
         :preview="true"
         :toolbars="toolbars"
         :toolbarsExclude="[]"
@@ -248,14 +255,16 @@ const onHtmlChanged = (html) => {
 
 /* 隐藏图片下拉菜单中的上传图片和裁剪上传选项 */
 /* 多种选择器组合，确保全面覆盖 */
-:deep(.md-editor .md-editor-dropdown .md-editor-dropdown-item:nth-child(2)),
-:deep(.md-editor .md-editor-dropdown .md-editor-dropdown-item:nth-child(3)) {
+:deep(.md-editor-menu-item-image),
+:deep(.md-editor-menu-item[title*="上传"]),
+:deep(.md-editor-menu-item[title*="裁剪"]) {
   display: none !important;
-  height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow: hidden !important;
-  visibility: hidden !important;
+}
+
+/* 修复代码块复制按钮遮挡问题 */
+:deep(.md-editor-code-head),
+:deep(.md-editor-copy-button) {
+  z-index: 10 !important;
 }
 
 /* 调整 emoji 表格样式，使其更大且居中 */
