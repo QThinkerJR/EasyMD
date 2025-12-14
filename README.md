@@ -1,6 +1,6 @@
 # EasyMD
 
-EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 的现代化 Markdown 桌面编辑器。它结合了 Go 语言的高性能后端能力与 Vue 3 的现代化前端体验，支持实时预览、流程图、甘特图、数学公式、代码高亮和 HTML 导出等丰富功能。
+EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 的现代化 Markdown 桌面编辑器。支持实时预览、流程图、甘特图、数学公式、代码高亮和 HTML、PDF 导出等丰富功能。
 
 ## ✨ 功能特性
 
@@ -10,7 +10,7 @@ EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 
 - **数学公式**: 支持 MathJax，完美渲染数学公式。
 - **代码高亮**: 支持多种编程语言的代码高亮显示。
 - **文件管理**: 支持打开、保存、另存为本地文件。
-- **导出功能**: 支持将文档导出为样式精美的 HTML 文件。
+- **导出功能**: 支持将文档导出为HTML和PDF。
 
 ## 🛠️ 技术栈
 
@@ -41,7 +41,7 @@ go install github.com/wailsapp/wails/v2/cmd/wails@latest
 ### 获取代码
 
 ```bash
-git clone https://github.com/yourusername/EasyMD.git
+git clone https://github.com/QThinkerJR/EasyMD.git
 cd EasyMD
 ```
 
