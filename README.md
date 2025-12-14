@@ -2,6 +2,8 @@
 
 EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 的现代化 Markdown 桌面编辑器。支持实时预览、流程图、甘特图、数学公式、代码高亮和 HTML、PDF 导出等丰富功能。
 
+<img width="1480" height="990" alt="image" src="https://github.com/user-attachments/assets/36fbf767-2766-446c-8319-a027cbd9ac02" />
+
 ## ✨ 功能特性
 
 - **实时预览**: 所见即所得的编辑体验。
