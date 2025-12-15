@@ -1,11 +1,12 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MdEditor, config } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { Emoji, Mark, ExportPDF } from '@vavt/v3-extension'
 import '@vavt/v3-extension/lib/asset/style.css'
 import MarkExtension from 'markdown-it-mark'
 import { t } from '../i18n'
+import { BrowserOpenURL } from '../../wailsjs/runtime/runtime.js'
 
 // 配置 markdown-it 扩展
 config({
@@ -37,6 +38,20 @@ const emit = defineEmits(['update:modelValue', 'htmlChanged'])
 
 // 编辑器引用
 const editorRef = ref(null)
+const containerRef = ref(null)
+
+// 处理链接点击
+const handleLinkClick = (e) => {
+  const target = e.target.closest('a')
+  if (target) {
+    const href = target.getAttribute('href')
+    // 如果是外部链接（不以 # 开头），则拦截并使用系统浏览器打开
+    if (href && !href.startsWith('#')) {
+      e.preventDefault()
+      BrowserOpenURL(href)
+    }
+  }
+}
 
 // 编辑器内容
 const content = computed({
@@ -81,6 +96,11 @@ const toolbars = [
 
 // 在组件挂载后，隐藏图片按钮下拉菜单中的上传和裁剪选项
 onMounted(() => {
+  // 添加链接点击监听
+  if (containerRef.value) {
+    containerRef.value.addEventListener('click', handleLinkClick)
+  }
+
   // 延迟执行，确保DOM已渲染
   const hideImageOptions = () => {
     // 查找所有图片按钮的下拉菜单项
@@ -101,6 +121,13 @@ onMounted(() => {
   setTimeout(hideImageOptions, 100)
   setTimeout(hideImageOptions, 500)
   setTimeout(hideImageOptions, 1000)
+})
+
+// 组件卸载时移除监听
+onUnmounted(() => {
+  if (containerRef.value) {
+    containerRef.value.removeEventListener('click', handleLinkClick)
+  }
 })
 
 // 导出 PDF 方法
@@ -141,7 +168,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="markdown-editor">
+  <div class="markdown-editor" ref="containerRef">
     <!-- 编辑器容器 -->
     <div class="md-editor-container" :class="{ 'loading': isLoading }">
       <MdEditor
