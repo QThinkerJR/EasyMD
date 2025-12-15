@@ -2,6 +2,8 @@
 
 EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 的现代化 Markdown 桌面编辑器。支持实时预览、流程图、甘特图、数学公式、代码高亮和 HTML、PDF 导出等丰富功能。
 
+<img width="1510" height="813" alt="image" src="https://github.com/user-attachments/assets/cb377d0a-34c0-4606-ba6c-27b2f1e1d0ab" />
+
 ## ✨ 功能特性
 
 - **实时预览**: 所见即所得的编辑体验。
@@ -53,7 +55,7 @@ cd EasyMD
 wails dev
 ```
 
-此命令将启动一个 Vite 开发服务器，支持前端热重载。如果需要在浏览器中调试，可以访问控制台输出的本地地址（通常是 http://localhost:34115）。
+此命令将启动一个 Vite 开发服务器，支持前端热重载。
 
 ### 构建发布
 
