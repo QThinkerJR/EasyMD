@@ -94,6 +94,20 @@ const toolbars = [
   'catalog'
 ]
 
+// 观察者实例
+let observer = null
+
+// 检查并隐藏菜单项
+const checkAndHide = (item) => {
+  const text = item.textContent?.trim() || ''
+  const title = item.getAttribute('title') || ''
+  // 隐藏包含“上传”或“裁剪”的选项 (中英文)
+  const keywords = ['上传', '裁剪', 'Upload', 'Clip']
+  if (keywords.some(k => text.includes(k) || title.includes(k))) {
+    item.style.display = 'none'
+  }
+}
+
 // 在组件挂载后，隐藏图片按钮下拉菜单中的上传和裁剪选项
 onMounted(() => {
   // 添加链接点击监听
@@ -101,32 +115,38 @@ onMounted(() => {
     containerRef.value.addEventListener('click', handleLinkClick)
   }
 
-  // 延迟执行，确保DOM已渲染
-  const hideImageOptions = () => {
-    // 查找所有图片按钮的下拉菜单项
-    // md-editor-v3 的下拉菜单项类名为 md-editor-menu-item，图片特定的还有 md-editor-menu-item-image
-    const dropdownItems = document.querySelectorAll('.md-editor-menu-item')
-    dropdownItems.forEach((item, index) => {
-      const text = item.textContent?.trim() || ''
-      // 隐藏包含“上传”或“裁剪”的选项
-      const keywords = ['上传', '裁剪', 'Upload', 'Clip']
-      if (keywords.some(k => text.includes(k))) {
-        item.style.display = 'none'
-        console.log(`隐藏选项 ${index}:`, text)
+  // 使用 MutationObserver 监听 DOM 变化，处理动态生成的菜单项
+  observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length) {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element
+            if (node.classList && node.classList.contains('md-editor-menu-item')) {
+              checkAndHide(node)
+            } else if (node.querySelectorAll) {
+              const items = node.querySelectorAll('.md-editor-menu-item')
+              items.forEach(checkAndHide)
+            }
+          }
+        })
       }
     })
-  }
+  })
   
-  // 多次尝试确保隐藏成功
-  setTimeout(hideImageOptions, 100)
-  setTimeout(hideImageOptions, 500)
-  setTimeout(hideImageOptions, 1000)
+  // 观察 body，因为 dropdown 可能被 teleport 到 body
+  observer.observe(document.body, { childList: true, subtree: true })
+  
+  // 初始检查
+  document.querySelectorAll('.md-editor-menu-item').forEach(checkAndHide)
 })
 
-// 组件卸载时移除监听
+// 组件卸载时移除监听和观察者
 onUnmounted(() => {
   if (containerRef.value) {
     containerRef.value.removeEventListener('click', handleLinkClick)
+  }
+  if (observer) {
+    observer.disconnect()
   }
 })
 
@@ -310,10 +330,11 @@ defineExpose({
 }
 
 /* 隐藏图片下拉菜单中的上传图片和裁剪上传选项 */
-/* 多种选择器组合，确保全面覆盖 */
-:deep(.md-editor-menu-item-image),
+/* 通过 title 属性精准匹配中文和英文 */
 :deep(.md-editor-menu-item[title*="上传"]),
-:deep(.md-editor-menu-item[title*="裁剪"]) {
+:deep(.md-editor-menu-item[title*="裁剪"]),
+:deep(.md-editor-menu-item[title*="Upload"]),
+:deep(.md-editor-menu-item[title*="Clip"]) {
   display: none !important;
 }
 
