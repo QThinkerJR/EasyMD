@@ -27,7 +27,8 @@ const emit = defineEmits([
   'save-file-as',
   'export-html',
   'export-pdf',
-  'toggle-theme'
+  'toggle-theme',
+  'convert-wechat'
 ])
 
 const showAbout = ref(false)
@@ -125,6 +126,18 @@ const saveButtonText = computed(() => {
               </svg>
             </template>
             {{ t('exportPdf') || 'PDF' }}
+          </Button>
+        </Tooltip>
+
+        <Tooltip :content="t('wechatPreview')">
+          <Button variant="text" @click="$emit('convert-wechat')">
+            <template #icon>
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 2.179 1.193 4.133 3.056 5.465-.084.516-.525 1.942-.596 2.219 0 0 0 .044.02.054.023.011 2.335-1.639 2.614-1.84.896.34 1.868.525 2.879.525.009 0 .018 0 .027 0zm-2.5-9.5c.552 0 1 .448 1 1s-.448 1-1 1-1-.448-1-1 .448-1 1-1zm5 0c.552 0 1 .448 1 1s-.448 1-1 1-1-.448-1-1 .448-1 1-1z"/>
+                <path fill="currentColor" d="M16.5 10c-3.866 0-7 2.686-7 6s3.134 6 7 6c.773 0 1.517-.107 2.213-.306 1.183.948 2.768 1.545 2.787 1.552.02.007.042-.003.051-.023.004-.01.002-.021-.005-.03-.232-.284-1.045-1.328-1.284-1.815C21.905 19.965 23.5 18.113 23.5 16c0-3.314-3.134-6-7-6zm-2.5 5c-.552 0-1-.448-1-1s.448-1 1-1 1 .448 1 1-.448 1-1 1zm5 0c-.552 0-1-.448-1-1s.448-1 1-1 1 .448 1 1-.448 1-1 1z"/>
+              </svg>
+            </template>
+            {{ t('wechat') }}
           </Button>
         </Tooltip>
 

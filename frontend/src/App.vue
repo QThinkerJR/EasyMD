@@ -3,6 +3,7 @@ import { reactive, ref, watch, onMounted, onUnmounted } from 'vue'
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next'
 import MarkdownEditor from './components/MarkdownEditor.vue'
 import Toolbar from './components/Toolbar.vue'
+import WeChatPreview from './components/WeChatPreview.vue'
 import { OpenFile, ReadFile, SaveFile, SaveFileAs, ExportToHTMLAs, SetLanguage } from '../wailsjs/go/main/App.js'
 import { OnFileDrop, OnFileDropOff } from '../wailsjs/runtime/runtime.js'
 import { detectLanguage, t, currentLocale, state } from './i18n'
@@ -21,6 +22,9 @@ const appState = reactive({
   isLoading: false,
   theme: 'light'
 })
+
+// 微信预览弹窗状态
+const showWeChatPreview = ref(false)
 
 // 编辑器引用
 const editorRef = ref(null)
@@ -263,6 +267,11 @@ const exportToPDF = () => {
   }
 }
 
+// 打开微信预览
+const openWeChatPreview = () => {
+  showWeChatPreview.value = true
+}
+
 // 新建文件
 const newFile = () => {
   if (appState.isModified) {
@@ -311,6 +320,7 @@ const getWindowTitle = () => {
       @export-html="exportToHTML"
       @export-pdf="exportToPDF"
       @toggle-theme="toggleTheme"
+      @convert-wechat="openWeChatPreview"
     />
     
     <div class="editor-container">
@@ -323,6 +333,11 @@ const getWindowTitle = () => {
         @html-changed="onHtmlChanged"
       />
     </div>
+
+    <WeChatPreview 
+      v-model:visible="showWeChatPreview"
+      :model-value="appState.markdownContent"
+    />
   </div>
 </template>
 

@@ -39,7 +39,9 @@ const messages = {
     author: '作者',
     thirdPartyLibs: '使用的第三方库',
     themeTooltipLight: '切换到亮色模式',
-    themeTooltipDark: '切换到暗色模式'
+    themeTooltipDark: '切换到暗色模式',
+    wechat: '公众号样式',
+    wechatPreview: '转换为微信公众号文章'
   },
   'en-US': {
     new: 'New',
@@ -79,7 +81,9 @@ const messages = {
     author: 'Author',
     thirdPartyLibs: 'Third-party Libraries',
     themeTooltipLight: 'Switch to Light Mode',
-    themeTooltipDark: 'Switch to Dark Mode'
+    themeTooltipDark: 'Switch to Dark Mode',
+    wechat: 'WeChat',
+    wechatPreview: 'Convert to WeChat Article'
   }
 }
 

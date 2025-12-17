@@ -134,7 +134,9 @@ onMounted(() => {
   })
   
   // 观察 body，因为 dropdown 可能被 teleport 到 body
-  observer.observe(document.body, { childList: true, subtree: true })
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true })
+  }
   
   // 初始检查
   document.querySelectorAll('.md-editor-menu-item').forEach(checkAndHide)

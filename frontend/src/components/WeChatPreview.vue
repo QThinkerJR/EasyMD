@@ -1,0 +1,1091 @@
+<script setup>
+import { ref, computed, nextTick } from 'vue'
+import { Dialog, Button, Space, MessagePlugin, Loading } from 'tdesign-vue-next'
+import { MdPreview } from 'md-editor-v3'
+import 'md-editor-v3/lib/preview.css'
+
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false
+  },
+  modelValue: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['update:visible'])
+
+const currentTheme = ref('default')
+const previewRef = ref(null)
+const copying = ref(false)
+
+const themes = [
+  { label: '经典绿色', value: 'default', color: '#07c160' },
+  { label: '优雅紫韵', value: 'elegant', color: '#722ed1' },
+  { label: '科技蓝调', value: 'tech', color: '#165dff' },
+  { label: '暖心橙意', value: 'warm', color: '#fa8c16' }
+]
+
+const handleClose = () => {
+  emit('update:visible', false)
+}
+
+// Inline styles generator
+const copyToWeChat = async () => {
+  if (!previewRef.value) return
+  
+  copying.value = true
+  
+  try {
+    // 1. Clone the container
+    // We need to get the inner HTML of the MdPreview
+    // MdPreview usually renders into a div with class 'md-editor-preview'
+    const previewEl = previewRef.value.querySelector('.md-editor-preview') || previewRef.value
+    const clone = previewEl.cloneNode(true)
+    
+    // Remove code block artifacts (copy buttons, language labels, etc.)
+    const artifacts = clone.querySelectorAll('.md-editor-code-head, .md-editor-copy-button, .md-editor-code-lang')
+    artifacts.forEach(el => el.remove())
+    
+    // Handle <details> tags (code folding) if they exist
+    const details = clone.querySelectorAll('details')
+    details.forEach(detail => {
+       const pre = detail.querySelector('pre')
+       if (pre) {
+          detail.parentNode.replaceChild(pre, detail)
+       }
+    })
+
+    // Create a temporary container to hold the clone and append to body to calculate styles
+    // (Though cloning computed styles is tricky if not attached. 
+    // Better approach: Traverse the *original* DOM, get computed styles, apply to *clone*)
+    
+    const applyStyles = (source, target) => {
+      if (source.nodeType !== Node.ELEMENT_NODE) return
+      
+      const computedStyle = window.getComputedStyle(source)
+      let styleString = ''
+      
+      // We only care about specific properties that matter for WeChat
+      // Copying ALL properties creates massive bloat and might break things
+      const properties = [
+        'color', 'background-color', 'font-size', 'font-family', 'font-weight',
+        'line-height', 'text-align', 'border', 'border-radius', 'padding', 
+        'margin', 'box-shadow', 'list-style',
+        'text-decoration', 'background', 'border-left', 'border-right', 'border-top', 'border-bottom'
+      ]
+      
+      properties.forEach(prop => {
+        const val = computedStyle.getPropertyValue(prop)
+        
+        // Skip default values to keep HTML clean
+        if (!val || val === 'initial' || val === 'none' || val === 'normal' || val === 'auto' || val === '0px' || val === 'rgba(0, 0, 0, 0)') {
+           return
+        }
+        
+        // Skip text-align: left/start (let it inherit from wrapper)
+        if (prop === 'text-align' && (val === 'left' || val === 'start')) {
+            return
+        }
+
+        styleString += `${prop}:${val};`
+      })
+      
+      // Special handling for images
+      if (source.tagName === 'IMG') {
+        target.style.maxWidth = '100%'
+        target.style.height = 'auto'
+        target.style.display = 'block'
+        target.style.margin = '10px auto'
+        target.style.boxSizing = 'border-box'
+      }
+
+      // Special handling for lists to fix indentation in WeChat
+      if (source.tagName === 'UL' || source.tagName === 'OL') {
+        target.style.paddingLeft = '20px'
+        target.style.listStylePosition = 'outside'
+      }
+
+      // Special handling for list items
+      if (source.tagName === 'LI') {
+        target.style.margin = '5px 0'
+        
+        // Fix for task lists (checkboxes)
+        if (source.classList.contains('md-editor-task-item')) {
+           // Logic moved to specific handler below
+        }
+      }
+      
+      // Special handling for input checkboxes in task lists
+      if (source.tagName === 'INPUT' && source.type === 'checkbox') {
+         // Mark this element for special handling
+         target.setAttribute('data-task-checkbox', 'true')
+      }
+      
+      // Handle the label/text after checkbox
+      // We can't easily select "text node after checkbox" with CSS selectors in the loop
+      // But if the LI has display: flex, it might break in WeChat
+      // So let's try a safer approach: Block layout with inline elements
+      if (source.tagName === 'LI' && source.classList.contains('md-editor-task-item')) {
+         target.style.listStyleType = 'none'
+         target.style.margin = '8px 0'
+         target.style.paddingLeft = '0'
+         target.style.overflow = 'visible' // Allow proper flow
+         target.style.display = 'block' // Use block layout
+         target.style.verticalAlign = 'baseline'
+         target.style.lineHeight = '1.6'
+         target.style.fontSize = '16px'
+      }
+      if (source.tagName === 'BLOCKQUOTE') {
+        target.style.boxSizing = 'border-box'
+        target.style.maxWidth = '100%'
+      }
+      
+      target.setAttribute('style', styleString)
+      
+      // Recursively process children
+      for (let i = 0; i < source.children.length; i++) {
+        if (target.children[i]) {
+          applyStyles(source.children[i], target.children[i])
+        }
+      }
+      
+      // Apply special styles after setting the general styles to avoid override
+      if (target.getAttribute('data-task-checkbox') === 'true') {
+         target.style.margin = '0 8px 0 0' // Fix: remove negative left margin
+         target.style.padding = '0'
+         target.style.width = '16px'
+         target.style.height = '16px'
+         target.style.verticalAlign = 'middle'
+         target.style.display = 'inline-block'
+         target.style.position = 'static' // Key: static positioning
+         target.style.top = 'auto' // Key: reset top
+         target.style.float = 'none' // Remove float to avoid layout issues
+      }
+    }
+    
+    applyStyles(previewEl, clone)
+    
+    // Wrap content in a section with max-width 100% to ensure it fits WeChat editor
+    const wrapper = document.createElement('section')
+    wrapper.style.width = '100%'
+    wrapper.style.maxWidth = '100%'
+    wrapper.style.boxSizing = 'border-box'
+    wrapper.style.textAlign = 'left' // Force left alignment by default
+    wrapper.style.overflowX = 'hidden' // Prevent horizontal scroll
+    wrapper.style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei', Arial, sans-serif"
+    
+    // Move all children of clone to wrapper
+    while (clone.firstChild) {
+      wrapper.appendChild(clone.firstChild)
+    }
+
+    // Process task list items with a simpler, more WeChat-compatible approach
+    // Using inline-block elements to ensure checkbox and text stay on the same line
+    // Broadened selector to catch any LI containing a checkbox
+    const allListItems = wrapper.querySelectorAll('li')
+    const taskItems = []
+    allListItems.forEach(li => {
+      if (li.querySelector('input[type="checkbox"]')) {
+        taskItems.push(li)
+      }
+    })
+    
+    taskItems.forEach(item => {
+      // First, check and fix the parent UL element if it hasn't been processed yet
+      const parentUl = item.parentElement
+      if (parentUl && (parentUl.tagName === 'UL' || parentUl.tagName === 'OL') && !parentUl.hasAttribute('data-task-list-processed')) {
+        // Reset UL styles for task lists to be more compatible with WeChat
+        parentUl.style.listStyle = 'none'
+        parentUl.style.paddingLeft = '0'
+        parentUl.style.marginLeft = '0' // Ensure no extra margin
+        parentUl.style.margin = '10px 0'
+        parentUl.style.lineHeight = '1.6'
+        parentUl.style.fontSize = '16px'
+        parentUl.setAttribute('data-task-list-processed', 'true')
+        
+        // Remove class that might add padding
+        parentUl.classList.remove('list-paddingleft-1') // Remove if present
+      }
+       // Find the checkbox
+       const checkbox = item.querySelector('input[type="checkbox"]')
+       if (!checkbox) return
+       
+       // Reset LI styles to be more compatible with WeChat
+       item.style.listStyle = 'none'
+       item.style.padding = '0'
+       item.style.margin = '8px 0'
+       item.style.lineHeight = '1.6'
+       item.style.fontSize = '16px'
+       item.style.display = 'block'
+       
+       // Style checkbox for WeChat compatibility - key changes based on user feedback
+       checkbox.style.margin = '0 8px 0 0'
+       checkbox.style.padding = '0'
+       checkbox.style.width = '16px'
+       checkbox.style.height = '16px'
+       checkbox.style.verticalAlign = 'middle' // Key: vertical middle alignment
+       checkbox.style.display = 'inline-block' // Ensure inline-block layout
+       checkbox.style.position = 'static' // Key: cancel relative positioning to avoid misalignment
+       checkbox.style.top = 'auto' // Key: reset top value
+       checkbox.style.float = 'none'
+       
+       // Collect all content after checkbox
+       const childNodes = Array.from(item.childNodes)
+       let hasTextContent = false
+       
+       // Clear the item and rebuild with proper layout
+       item.innerHTML = ''
+       
+       // Add checkbox first
+       item.appendChild(checkbox)
+       
+       // Create a section wrapper for text content with inline-block display
+       // Use SECTION as requested by user with specific styles
+       const textSection = document.createElement('section')
+       textSection.style.display = 'inline-block' // Key: make section inline-block to stay on same line as input
+       textSection.style.verticalAlign = 'middle' // Key: align with input
+       textSection.style.margin = '0' // Reset default margin
+       
+       // Add all other content to the section
+       childNodes.forEach(child => {
+          if (child !== checkbox) {
+             hasTextContent = true
+             if (child.nodeType === Node.TEXT_NODE) {
+                // For text nodes, add directly as text
+                textSection.appendChild(document.createTextNode(child.textContent))
+             } else if (child.tagName === 'SECTION') {
+                // If it's a section, extract its content and add directly
+                const sectionChildren = Array.from(child.childNodes)
+                sectionChildren.forEach(sectionChild => {
+                   if (sectionChild.nodeType === Node.TEXT_NODE) {
+                      textSection.appendChild(document.createTextNode(sectionChild.textContent))
+                   } else {
+                      // Clone and ensure inline display
+                      const clonedChild = sectionChild.cloneNode(true)
+                      if (clonedChild.style) {
+                         clonedChild.style.display = 'inline'
+                         clonedChild.style.verticalAlign = 'middle'
+                      }
+                      textSection.appendChild(clonedChild)
+                   }
+                })
+             } else if (child.tagName === 'UL' || child.tagName === 'OL') {
+                // For nested lists, keep them as block elements
+                child.style.marginLeft = '24px'
+                child.style.marginTop = '5px'
+                child.style.marginBottom = '5px'
+                textSection.appendChild(child)
+             } else {
+                // For other element nodes, clone and append
+                const clonedChild = child.cloneNode(true)
+                // Ensure inline display for all elements
+                if (clonedChild.style) {
+                   clonedChild.style.display = 'inline'
+                   clonedChild.style.verticalAlign = 'middle'
+                }
+                textSection.appendChild(clonedChild)
+             }
+          }
+       })
+       
+       // If no text content, add a space to maintain layout
+       if (!hasTextContent) {
+          textSection.appendChild(document.createTextNode(' '))
+       }
+       
+       // Add the text section to the item
+       item.appendChild(textSection)
+       
+       // Final force-apply of checkbox styles to ensure they're not overridden
+       checkbox.style.margin = '0 8px 0 0'
+       checkbox.style.padding = '0'
+       checkbox.style.width = '16px'
+       checkbox.style.height = '16px'
+       checkbox.style.verticalAlign = 'middle'
+       checkbox.style.display = 'inline-block'
+       checkbox.style.position = 'static'
+       checkbox.style.top = 'auto'
+       checkbox.style.float = 'none'
+    })
+
+    // Process code blocks to add Mac-style header
+    const codeBlocks = wrapper.querySelectorAll('.md-editor-code, pre')
+    codeBlocks.forEach(block => {
+      // Skip if already processed or inside another processed block
+      if (block.closest('.mac-window-container')) return
+      
+      // If it's a pre inside md-editor-code, we want the wrapper
+      if (!block.parentNode || (block.tagName === 'PRE' && block.parentNode.classList.contains('md-editor-code'))) {
+         return // handled by parent loop
+      }
+
+      const pre = block.tagName === 'PRE' ? block : block.querySelector('pre')
+      if (!pre) return
+
+      // Determine background color based on theme
+      // Default to dark background for all themes as requested
+      const isDark = true
+      const bgColor = '#282c34'
+      const headerColor = '#21252b'
+      const textColor = '#abb2bf'
+      
+      // Create Mac Window Container
+      // Use SECTION tag for better WeChat compatibility
+      const container = document.createElement('section')
+      container.className = 'mac-window-container'
+      container.style.borderRadius = '6px'
+      container.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)'
+      container.style.overflow = 'hidden'
+      container.style.margin = '15px 0'
+      container.style.backgroundColor = bgColor
+      container.style.display = 'block' // Ensure block display
+      
+      // Create Mac Header
+      const header = document.createElement('div')
+      header.style.background = headerColor
+      header.style.padding = '8px 12px'
+      header.style.display = 'flex'
+      header.style.alignItems = 'center'
+      header.style.borderRadius = '6px 6px 0 0'
+      header.style.lineHeight = '1' // Fix height issues
+      
+      // Create Dots
+      const createDot = (color) => {
+        const dot = document.createElement('div')
+        dot.style.width = '12px'
+        dot.style.height = '12px'
+        dot.style.borderRadius = '50%'
+        dot.style.backgroundColor = color
+        dot.style.marginRight = '8px'
+        dot.style.display = 'inline-block' // Ensure inline-block
+        return dot
+      }
+      
+      header.appendChild(createDot('#ff5f56')) // Red
+      header.appendChild(createDot('#ffbd2e')) // Yellow
+      header.appendChild(createDot('#27c93f')) // Green
+      
+      // Assemble
+      container.appendChild(header)
+      
+      // Clone pre to put inside container
+      const preClone = pre.cloneNode(true)
+      
+      // Remove any background color from children to prevent red/pink lines
+      const allChildren = preClone.querySelectorAll('*')
+      allChildren.forEach(child => {
+         child.style.backgroundColor = 'transparent'
+         child.style.backgroundImage = 'none'
+         
+         // Force inline syntax highlighting colors
+         const classList = child.classList
+         if (classList.length > 0) {
+            // ... (existing highlight logic) ...
+            if (classList.contains('hljs-comment') || classList.contains('hljs-quote')) {
+               child.style.color = '#5c6370'
+               child.style.fontStyle = 'italic'
+            } else if (classList.contains('hljs-doctag') || classList.contains('hljs-keyword') || classList.contains('hljs-formula')) {
+               child.style.color = '#c678dd'
+            } else if (classList.contains('hljs-section') || classList.contains('hljs-name') || classList.contains('hljs-selector-tag') || classList.contains('hljs-deletion') || classList.contains('hljs-subst')) {
+               child.style.color = '#e06c75'
+            } else if (classList.contains('hljs-literal')) {
+               child.style.color = '#56b6c2'
+            } else if (classList.contains('hljs-string') || classList.contains('hljs-regexp') || classList.contains('hljs-addition') || classList.contains('hljs-attribute') || classList.contains('hljs-meta')) {
+               child.style.color = '#98c379'
+            } else if (classList.contains('hljs-attr') || classList.contains('hljs-variable') || classList.contains('hljs-template-variable') || classList.contains('hljs-type') || classList.contains('hljs-selector-class') || classList.contains('hljs-selector-attr') || classList.contains('hljs-selector-pseudo') || classList.contains('hljs-number')) {
+               child.style.color = '#d19a66'
+            } else if (classList.contains('hljs-symbol') || classList.contains('hljs-bullet') || classList.contains('hljs-link') || classList.contains('hljs-selector-id') || classList.contains('hljs-title')) {
+               child.style.color = '#61aeee'
+            } else if (classList.contains('hljs-built_in') || classList.contains('hljs-title') && classList.contains('class_') || classList.contains('hljs-class')) {
+               child.style.color = '#e6c07b'
+            } else if (classList.contains('hljs-emphasis')) {
+               child.style.fontStyle = 'italic'
+            } else if (classList.contains('hljs-strong')) {
+               child.style.fontWeight = 'bold'
+            }
+         }
+      })
+      
+      // Traverse text nodes and replace spaces with NBSP to prevent WeChat from eating them
+      // But we need to be careful not to introduce extra spaces at the beginning if they are just layout formatting
+      const replaceSpaces = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+           // Replace space with Non-Breaking Space (0xA0)
+           // But avoid replacing newlines
+           let val = node.nodeValue
+           // If the node contains ONLY newlines/spaces and is followed by a block, it might be structural
+           // However, inside PRE, all whitespace matters.
+           
+           // Strategy: Replace ALL regular spaces with NBSP, but preserve newlines
+           val = val.replace(/ /g, '\u00a0')
+           node.nodeValue = val
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+           for (let i = 0; i < node.childNodes.length; i++) {
+              replaceSpaces(node.childNodes[i])
+           }
+        }
+      }
+      
+      // First, trim the initial and trailing newlines/spaces from the code block itself
+      // We perform a deep search for the first text node and trim it
+      const trimLeadingWhitespace = (node) => {
+         if (node.nodeType === Node.TEXT_NODE) {
+            // Found the first text node
+            if (node.nodeValue.trim().length === 0) {
+               // If it's pure whitespace, remove it entirely and continue search
+               const parent = node.parentNode
+               parent.removeChild(node)
+               return false // Continue searching
+            } else {
+               // Trim start of this node
+               node.nodeValue = node.nodeValue.replace(/^\s+/, '')
+               return true // Done
+            }
+         } else if (node.nodeType === Node.ELEMENT_NODE) {
+            // Search children
+            // We need to iterate backwards-compatible loop because we might remove children
+            const children = Array.from(node.childNodes)
+            for (const child of children) {
+               if (trimLeadingWhitespace(child)) {
+                  return true // Found and trimmed
+               }
+            }
+         }
+         return false
+      }
+      trimLeadingWhitespace(preClone)
+      
+      // Also trim trailing whitespace (simpler, usually at the end of pre)
+      // For trailing, innerHTML replace is usually safe enough as it doesn't affect structure as much
+      // but let's be consistent and safe.
+      let html = preClone.innerHTML
+      html = html.replace(/\s+$/, '')
+      preClone.innerHTML = html
+
+      // Re-query children after innerHTML update
+      const newChildren = preClone.querySelectorAll('*')
+      newChildren.forEach(child => {
+         // Re-apply styles (same logic as above)
+         child.style.backgroundColor = 'transparent'
+         child.style.backgroundImage = 'none'
+         
+         const classList = child.classList
+         if (classList.length > 0) {
+            if (classList.contains('hljs-comment') || classList.contains('hljs-quote')) {
+               child.style.color = '#5c6370'
+               child.style.fontStyle = 'italic'
+            } else if (classList.contains('hljs-doctag') || classList.contains('hljs-keyword') || classList.contains('hljs-formula')) {
+               child.style.color = '#c678dd'
+            } else if (classList.contains('hljs-section') || classList.contains('hljs-name') || classList.contains('hljs-selector-tag') || classList.contains('hljs-deletion') || classList.contains('hljs-subst')) {
+               child.style.color = '#e06c75'
+            } else if (classList.contains('hljs-literal')) {
+               child.style.color = '#56b6c2'
+            } else if (classList.contains('hljs-string') || classList.contains('hljs-regexp') || classList.contains('hljs-addition') || classList.contains('hljs-attribute') || classList.contains('hljs-meta')) {
+               child.style.color = '#98c379'
+            } else if (classList.contains('hljs-attr') || classList.contains('hljs-variable') || classList.contains('hljs-template-variable') || classList.contains('hljs-type') || classList.contains('hljs-selector-class') || classList.contains('hljs-selector-attr') || classList.contains('hljs-selector-pseudo') || classList.contains('hljs-number')) {
+               child.style.color = '#d19a66'
+            } else if (classList.contains('hljs-symbol') || classList.contains('hljs-bullet') || classList.contains('hljs-link') || classList.contains('hljs-selector-id') || classList.contains('hljs-title')) {
+               child.style.color = '#61aeee'
+            } else if (classList.contains('hljs-built_in') || classList.contains('hljs-title') && classList.contains('class_') || classList.contains('hljs-class')) {
+               child.style.color = '#e6c07b'
+            } else if (classList.contains('hljs-emphasis')) {
+               child.style.fontStyle = 'italic'
+            } else if (classList.contains('hljs-strong')) {
+               child.style.fontWeight = 'bold'
+            }
+         }
+      })
+      
+      replaceSpaces(preClone)
+
+      preClone.style.margin = '0'
+      preClone.style.padding = '12px 16px'
+      // Explicitly set background on PRE as well, in case container bg is stripped
+      preClone.style.backgroundColor = bgColor 
+      preClone.style.border = 'none'
+      preClone.style.borderRadius = '0 0 6px 6px'
+      preClone.style.color = textColor
+      preClone.style.fontFamily = 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace'
+      preClone.style.fontSize = '14px'
+      preClone.style.lineHeight = '1.6'
+      // Use 'pre' instead of 'pre-wrap' to ensure spaces are respected and allow scrolling
+      preClone.style.whiteSpace = 'pre' 
+      preClone.style.overflowX = 'auto'
+      preClone.style.display = 'block' // Ensure block display
+      preClone.style.textIndent = '0' // Force reset text-indent
+      preClone.style.paddingLeft = '16px' // Ensure left padding matches style
+
+      // Ensure code element inside pre also has correct style
+      const codeEl = preClone.querySelector('code')
+      if (codeEl) {
+        codeEl.style.whiteSpace = 'pre'
+        codeEl.style.fontFamily = 'inherit'
+        codeEl.style.color = 'inherit'
+        codeEl.style.textIndent = '0' // Force reset text-indent
+        codeEl.style.paddingLeft = '0' // Code element shouldn't have padding
+        codeEl.style.marginLeft = '0'
+      }
+      
+      container.appendChild(preClone)
+      
+      // Replace original block with new container
+      // If block is .md-editor-code, replace it. If block is pre, replace it.
+      if (block.tagName === 'PRE') {
+        block.parentNode.replaceChild(container, block)
+      } else {
+        block.innerHTML = ''
+        block.appendChild(container)
+      }
+    })
+
+    // Copy to clipboard logic with fallback
+    const doCopy = async () => {
+      try {
+        // Try Modern Clipboard API first
+        const clipboardItem = new ClipboardItem({
+          'text/html': new Blob([wrapper.outerHTML], { type: 'text/html' }),
+          'text/plain': new Blob([wrapper.innerText], { type: 'text/plain' })
+        })
+        
+        await navigator.clipboard.write([clipboardItem])
+        MessagePlugin.success('复制成功，请直接粘贴到微信公众号后台')
+      } catch (err) {
+        console.warn('Clipboard API failed, trying execCommand fallback...', err)
+        
+        // Fallback: document.execCommand('copy')
+        try {
+          const container = document.createElement('div')
+          // We need to clone wrapper because appending it will move it from memory to DOM
+          // and if we needed to retry or use it elsewhere, it might be an issue. 
+          // But here it's fine as this is the last step.
+          container.appendChild(wrapper)
+          
+          container.style.position = 'fixed'
+          container.style.left = '-9999px'
+          container.style.top = '0'
+          container.style.opacity = '0'
+          container.style.pointerEvents = 'none'
+          container.style.zIndex = '-1'
+          
+          document.body.appendChild(container)
+          
+          const selection = window.getSelection()
+          const range = document.createRange()
+          
+          // Select the wrapper element itself
+          range.selectNode(wrapper)
+          
+          selection.removeAllRanges()
+          selection.addRange(range)
+          
+          const successful = document.execCommand('copy')
+          
+          document.body.removeChild(container)
+          selection.removeAllRanges()
+          
+          if (successful) {
+            MessagePlugin.success('复制成功，请直接粘贴到微信公众号后台')
+          } else {
+            throw new Error('execCommand returned false')
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback copy failed', fallbackErr)
+          throw fallbackErr // Re-throw to trigger outer catch
+        }
+      }
+    }
+
+    await doCopy()
+    
+  } catch (err) {
+    console.error('Copy process failed', err)
+    MessagePlugin.error('复制失败，请重试')
+  } finally {
+    copying.value = false
+  }
+}
+
+</script>
+
+<template>
+  <Dialog
+    :visible="visible"
+    :footer="false"
+    header="微信公众号预览与导出"
+    width="90%"
+    top="5vh"
+    @close="handleClose"
+    class="wechat-preview-dialog"
+  >
+    <div class="wechat-container">
+      <!-- Sidebar -->
+      <div class="theme-sidebar">
+        <h3>选择主题</h3>
+        <div class="theme-list">
+          <div 
+            v-for="theme in themes" 
+            :key="theme.value"
+            class="theme-item"
+            :class="{ active: currentTheme === theme.value }"
+            @click="currentTheme = theme.value"
+          >
+            <div class="color-dot" :style="{ backgroundColor: theme.color }"></div>
+            <span>{{ theme.label }}</span>
+          </div>
+        </div>
+        
+        <div class="action-area">
+          <Button theme="primary" block size="large" @click="copyToWeChat" :loading="copying">
+            <template #icon>
+              <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 8px;">
+                <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+              </svg>
+            </template>
+            一键复制
+          </Button>
+          <p class="tip">复制后直接粘贴到公众号后台编辑器</p>
+        </div>
+      </div>
+      
+      <!-- Preview Area -->
+      <div class="preview-area-wrapper">
+        <div class="preview-mobile-frame">
+          <div class="preview-content" ref="previewRef" :class="`wechat-theme-${currentTheme}`">
+            <MdPreview 
+              v-if="visible"
+              :modelValue="modelValue" 
+              previewTheme="default" 
+              codeTheme="atom" 
+              :codeFoldable="false"
+              editorId="wechat-preview"
+            />
+            
+            <!-- Footer Signature (Optional) -->
+            <div class="wechat-footer">
+              <p>Created with EasyMD</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Dialog>
+</template>
+
+<style scoped>
+.wechat-container {
+  display: flex;
+  height: 75vh;
+  gap: 20px;
+}
+
+.theme-sidebar {
+  width: 250px;
+  border-right: 1px solid #eee;
+  padding-right: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-sidebar h3 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.theme-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.theme-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.theme-item:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-item.active {
+  background-color: #e6f7ff;
+  color: #1677ff;
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.action-area {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.tip {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.preview-area-wrapper {
+  flex: 1;
+  background-color: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+
+.preview-mobile-frame {
+  width: 375px; /* Mobile width */
+  min-height: 100%;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+.wechat-footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 12px;
+  color: #ccc;
+  border-top: 1px dashed #eee;
+  padding-top: 20px;
+}
+</style>
+
+<!-- Global Styles for WeChat Themes -->
+<!-- These need to be not scoped so they affect the MdPreview content -->
+<style>
+/* Reset some md-editor defaults to fit WeChat */
+.preview-content {
+  text-align: left !important;
+}
+
+.preview-content .md-editor-preview {
+  padding: 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+}
+
+.preview-content .md-editor-preview img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 10px 0;
+  display: block;
+}
+
+/* ================== Default Theme (Green) ================== */
+.wechat-theme-default .md-editor-preview h1 {
+  font-size: 22px;
+  font-weight: bold;
+  border-bottom: 2px solid #07c160;
+  padding-bottom: 10px;
+  margin: 20px 0 15px;
+  color: #333;
+}
+
+.wechat-theme-default .md-editor-preview h2 {
+  font-size: 18px;
+  font-weight: bold;
+  background: rgba(7, 193, 96, 0.1);
+  border-left: 5px solid #07c160;
+  padding: 10px;
+  margin: 20px 0 15px;
+  border-radius: 0 4px 4px 0;
+  color: #333;
+}
+
+.wechat-theme-default .md-editor-preview h3 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #07c160;
+  margin: 15px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid #07c160;
+}
+
+.wechat-theme-default .md-editor-preview blockquote {
+  border-left: 4px solid #07c160;
+  background-color: #f8f9fa;
+  color: #666;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.wechat-theme-default .md-editor-preview ul li::marker {
+  color: #07c160;
+}
+
+.wechat-theme-default .md-editor-preview a {
+  color: #07c160;
+  text-decoration: none;
+  border-bottom: 1px dashed #07c160;
+}
+
+/* ================== Elegant Theme (Purple) ================== */
+.wechat-theme-elegant .md-editor-preview {
+  font-family: "Optima", "PingFang SC", serif;
+}
+
+.wechat-theme-elegant .md-editor-preview h1 {
+  font-size: 24px;
+  text-align: center;
+  color: #722ed1;
+  margin: 30px 0 20px;
+  font-weight: normal;
+}
+
+.wechat-theme-elegant .md-editor-preview h2 {
+  font-size: 18px;
+  text-align: center;
+  color: #fff;
+  background-color: #722ed1;
+  display: table;
+  margin: 30px auto 20px;
+  padding: 5px 20px;
+  border-radius: 20px;
+  font-weight: normal;
+}
+
+.wechat-theme-elegant .md-editor-preview h3 {
+  font-size: 16px;
+  color: #722ed1;
+  border-bottom: 1px solid #722ed1;
+  display: inline-block;
+  padding-bottom: 5px;
+  margin: 20px 0 10px;
+}
+
+.wechat-theme-elegant .md-editor-preview blockquote {
+  border: none;
+  background-color: #f9f0ff;
+  color: #722ed1;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 8px;
+  text-align: center;
+  font-style: italic;
+}
+
+.wechat-theme-elegant .md-editor-preview strong {
+  color: #722ed1;
+}
+
+/* ================== Tech Theme (Blue) ================== */
+.wechat-theme-tech .md-editor-preview h1 {
+  font-size: 22px;
+  color: #165dff;
+  border-bottom: 1px solid #e5e6eb;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.wechat-theme-tech .md-editor-preview h2 {
+  font-size: 18px;
+  color: #165dff;
+  border-left: 4px solid #165dff;
+  padding-left: 12px;
+  margin: 25px 0 15px;
+  background: linear-gradient(90deg, rgba(22, 93, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.wechat-theme-tech .md-editor-preview h3 {
+  font-size: 16px;
+  color: #165dff;
+  margin: 20px 0 10px;
+}
+
+.wechat-theme-tech .md-editor-preview blockquote {
+  border-left: 4px solid #165dff;
+  background-color: #e8f3ff;
+  color: #555;
+  padding: 10px 15px;
+  border-radius: 0 8px 8px 0;
+}
+
+.wechat-theme-tech .md-editor-preview code {
+  color: #165dff;
+  background-color: #e8f3ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ================== Warm Theme (Orange) ================== */
+.wechat-theme-warm .md-editor-preview h1 {
+  font-size: 22px;
+  color: #fa8c16;
+  text-align: center;
+  background-image: linear-gradient(to right, transparent, rgba(250, 140, 22, 0.2), transparent);
+  padding: 10px 0;
+  margin: 20px 0;
+}
+
+.wechat-theme-warm .md-editor-preview h2 {
+  font-size: 18px;
+  color: #fff;
+  background-color: #fa8c16;
+  display: inline-block;
+  padding: 5px 15px;
+  border-radius: 10px 10px 10px 0;
+  margin: 20px 0 15px;
+  box-shadow: 2px 2px 0 rgba(250, 140, 22, 0.3);
+}
+
+.wechat-theme-warm .md-editor-preview h3 {
+  font-size: 16px;
+  color: #fa8c16;
+  border-bottom: 2px solid #fa8c16;
+  display: inline-block;
+  margin: 15px 0 10px;
+}
+
+.wechat-theme-warm .md-editor-preview blockquote {
+  border: 1px dashed #fa8c16;
+  background-color: #fff7e6;
+  color: #8c5a2b;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.wechat-theme-warm .md-editor-preview strong {
+  color: #d46b08;
+  border-bottom: 2px solid rgba(250, 140, 22, 0.3);
+}
+
+/* Common fix for code blocks overflow */
+.preview-content .md-editor-preview pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Mac-like Code Block Style for Preview */
+.preview-content .md-editor-code {
+  position: relative;
+  margin-top: 24px !important;
+  background: #282c34 !important; /* Force dark background for all themes */
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  color: #abb2bf !important;
+}
+
+/* Header simulation */
+.preview-content .md-editor-code::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 28px;
+  background: #21252b !important; /* Force dark header for all themes */
+  border-radius: 6px 6px 0 0;
+  /* Mac Dots */
+  background-image: radial-gradient(#ff5f56 50%, transparent 50%),
+                    radial-gradient(#ffbd2e 50%, transparent 50%),
+                    radial-gradient(#27c93f 50%, transparent 50%);
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  background-position: 12px center, 32px center, 52px center;
+  z-index: 10;
+}
+
+/* Adjust PRE padding to account for header */
+.preview-content .md-editor-code pre {
+  padding-top: 40px !important;
+  border-radius: 6px;
+  margin: 0 !important;
+  color: #abb2bf !important;
+}
+
+/* Hide original artifacts in preview */
+.preview-content .md-editor-code-head,
+.preview-content .md-editor-copy-button,
+.preview-content .md-editor-code-lang {
+  display: none !important;
+}
+
+/* 
+   Force Atom One Dark Syntax Highlighting Colors 
+   to ensure getComputedStyle picks up the correct dark theme colors 
+   regardless of what MdPreview thinks.
+*/
+.preview-content .hljs-comment,
+.preview-content .hljs-quote {
+  color: #5c6370 !important;
+  font-style: italic;
+}
+.preview-content .hljs-doctag,
+.preview-content .hljs-keyword,
+.preview-content .hljs-formula {
+  color: #c678dd !important;
+}
+.preview-content .hljs-section,
+.preview-content .hljs-name,
+.preview-content .hljs-selector-tag,
+.preview-content .hljs-deletion,
+.preview-content .hljs-subst {
+  color: #e06c75 !important;
+}
+.preview-content .hljs-literal {
+  color: #56b6c2 !important;
+}
+.preview-content .hljs-string,
+.preview-content .hljs-regexp,
+.preview-content .hljs-addition,
+.preview-content .hljs-attribute,
+.preview-content .hljs-meta .hljs-string {
+  color: #98c379 !important;
+}
+.preview-content .hljs-attr,
+.preview-content .hljs-variable,
+.preview-content .hljs-template-variable,
+.preview-content .hljs-type,
+.preview-content .hljs-selector-class,
+.preview-content .hljs-selector-attr,
+.preview-content .hljs-selector-pseudo,
+.preview-content .hljs-number {
+  color: #d19a66 !important;
+}
+.preview-content .hljs-symbol,
+.preview-content .hljs-bullet,
+.preview-content .hljs-link,
+.preview-content .hljs-meta,
+.preview-content .hljs-selector-id,
+.preview-content .hljs-title {
+  color: #61aeee !important;
+}
+.preview-content .hljs-built_in,
+.preview-content .hljs-title.class_,
+.preview-content .hljs-class .hljs-title {
+  color: #e6c07b !important;
+}
+.preview-content .hljs-emphasis {
+  font-style: italic;
+}
+.preview-content .hljs-strong {
+  font-weight: bold;
+}
+.preview-content .hljs-link {
+  text-decoration: underline;
+}
+</style>
