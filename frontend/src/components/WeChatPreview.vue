@@ -33,7 +33,12 @@ const themes = [
   { label: '经典绿色', value: 'default', color: '#07c160' },
   { label: '优雅紫韵', value: 'elegant', color: '#722ed1' },
   { label: '科技蓝调', value: 'tech', color: '#165dff' },
-  { label: '暖心橙意', value: 'warm', color: '#fa8c16' }
+  { label: '暖心橙意', value: 'warm', color: '#fa8c16' },
+  { label: '简约黑白', value: 'minimal', color: '#333333' },
+  { label: '清新薄荷', value: 'mint', color: '#38b2ac' },
+  { label: '浪漫粉樱', value: 'sakura', color: '#f687b3' },
+  { label: '商务深蓝', value: 'business', color: '#2c5282' },
+  { label: '复古棕褐', value: 'vintage', color: '#8b5a3c' }
 ]
 
 const handleClose = () => {
@@ -650,7 +655,7 @@ const copyToWeChat = async () => {
   <Dialog
     :visible="visible"
     :footer="false"
-    header="微信公众号预览与导出"
+    header="微信公众号文章主题预览"
     width="90%"
     top="5vh"
     @close="handleClose"
@@ -659,7 +664,6 @@ const copyToWeChat = async () => {
     <div class="wechat-container">
       <!-- Sidebar -->
       <div class="theme-sidebar">
-        <h3>选择主题</h3>
         <div class="theme-list">
           <div 
             v-for="theme in themes" 
@@ -1152,6 +1156,366 @@ const copyToWeChat = async () => {
   color: #fa8c16;
   font-weight: bold;
   border-bottom: none;
+}
+
+/* ================== Minimal Theme (Black & White) ================== */
+.wechat-theme-minimal .md-editor-preview {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
+  line-height: 1.8;
+}
+
+.wechat-theme-minimal .md-editor-preview h1 {
+  font-size: 26px;
+  font-weight: 300;
+  text-align: center;
+  color: #000;
+  padding: 20px 0;
+  margin: 30px 0 20px;
+  letter-spacing: 3px;
+  border-top: 3px solid #000;
+  border-bottom: 1px solid #000;
+}
+
+.wechat-theme-minimal .md-editor-preview h2 {
+  font-size: 22px;
+  font-weight: 400;
+  color: #000;
+  margin: 25px 0 15px;
+  padding: 12px 20px;
+  border-left: 5px solid #000;
+  border-right: 5px solid #000;
+  text-align: center;
+  background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.05) 100%);
+  outline: 1px solid #ddd;
+}
+
+.wechat-theme-minimal .md-editor-preview h3 {
+  font-size: 18px;
+  font-weight: 400;
+  color: #333;
+  margin: 20px 0 10px;
+  padding-left: 20px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed #999;
+  border-left: 3px solid #000;
+}
+
+.wechat-theme-minimal .md-editor-preview blockquote {
+  border: none;
+  background-color: #f8f8f8;
+  color: #666;
+  padding: 20px;
+  margin: 20px 0;
+  font-style: italic;
+  position: relative;
+}
+
+.wechat-theme-minimal .md-editor-preview p {
+  margin-bottom: 16px;
+  text-align: justify;
+}
+
+.wechat-theme-minimal .md-editor-preview strong {
+  font-weight: 600;
+  color: #000;
+}
+
+.wechat-theme-minimal .md-editor-preview a {
+  color: #000;
+  text-decoration: underline;
+}
+
+/* ================== Mint Theme (Fresh Mint Green) ================== */
+.wechat-theme-mint .md-editor-preview {
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2d3748;
+}
+
+.wechat-theme-mint .md-editor-preview h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #38b2ac;
+  text-align: center;
+  margin: 25px 0 20px;
+  padding: 20px 0;
+  border-top: 4px solid #38b2ac;
+  border-bottom: 4px solid #81e6d9;
+  border-radius: 2px;
+}
+
+.wechat-theme-mint .md-editor-preview h2 {
+  font-size: 20px;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(135deg, #38b2ac, #4fd1c5);
+  padding: 12px 25px;
+  margin: 20px 0 15px;
+  border-radius: 30px 5px 30px 5px;
+  display: inline-block;
+  box-shadow: 0 6px 15px rgba(56, 178, 172, 0.3);
+  transform: rotate(-1deg);
+}
+
+.wechat-theme-mint .md-editor-preview h3 {
+  font-size: 18px;
+  font-weight: 500;
+  color: #38b2ac;
+  margin: 18px 0 10px;
+  padding-left: 20px;
+  border-left: 5px solid #81e6d9;
+  padding-bottom: 5px;
+  border-bottom: 2px dotted #81e6d9;
+}
+
+.wechat-theme-mint .md-editor-preview blockquote {
+  border-left: 4px solid #38b2ac;
+  background-color: #e6fffa;
+  color: #234e52;
+  padding: 15px 20px;
+  margin: 15px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.wechat-theme-mint .md-editor-preview strong {
+  color: #38b2ac;
+  font-weight: 600;
+}
+
+.wechat-theme-mint .md-editor-preview a {
+  color: #38b2ac;
+  text-decoration: none;
+  border-bottom: 1px dotted #38b2ac;
+}
+
+/* ================== Sakura Theme (Romantic Pink) ================== */
+.wechat-theme-sakura .md-editor-preview {
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #4a5568;
+  line-height: 1.7;
+}
+
+.wechat-theme-sakura .md-editor-preview h1 {
+  font-size: 26px;
+  font-weight: 600;
+  text-align: center;
+  color: #d53f8c;
+  margin: 25px 0 20px;
+  padding: 25px 0;
+  background: linear-gradient(135deg, rgba(246, 135, 179, 0.1) 0%, rgba(251, 182, 206, 0.1) 100%);
+  border-radius: 15px;
+  border: 2px dashed #fbb6ce;
+}
+
+.wechat-theme-sakura .md-editor-preview h2 {
+  font-size: 20px;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(45deg, #f687b3, #fbb6ce);
+  padding: 12px 25px;
+  margin: 20px 0 15px;
+  border-radius: 25px 8px 25px 8px;
+  display: inline-block;
+  box-shadow: 0 5px 12px rgba(246, 135, 179, 0.4);
+  transform: rotate(-0.5deg);
+}
+
+.wechat-theme-sakura .md-editor-preview h3 {
+  font-size: 18px;
+  font-weight: 500;
+  color: #d53f8c;
+  margin: 18px 0 10px;
+  padding: 8px 15px;
+  background: linear-gradient(90deg, rgba(246, 135, 179, 0.1) 0%, transparent 100%);
+  border-left: 4px solid #f687b3;
+  border-bottom: 2px dotted #fbb6ce;
+}
+
+.wechat-theme-sakura .md-editor-preview blockquote {
+  border: none;
+  background: linear-gradient(135deg, #fff5f7, #fed7e2);
+  color: #702459;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 15px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(246, 135, 179, 0.15);
+}
+
+.wechat-theme-sakura .md-editor-preview blockquote::before {
+  content: '💕';
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background: #fff;
+  border-radius: 50%;
+  padding: 5px;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.wechat-theme-sakura .md-editor-preview strong {
+  color: #d53f8c;
+  font-weight: 600;
+}
+
+.wechat-theme-sakura .md-editor-preview a {
+  color: #d53f8c;
+  text-decoration: none;
+  border-bottom: 1px solid #fbb6ce;
+}
+
+/* ================== Business Theme (Professional Deep Blue) ================== */
+.wechat-theme-business .md-editor-preview {
+  font-family: 'Helvetica Neue', 'PingFang SC', sans-serif;
+  color: #2d3748;
+  line-height: 1.6;
+}
+
+.wechat-theme-business .md-editor-preview h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #2c5282;
+  text-align: center;
+  margin: 25px 0 20px;
+  position: relative;
+  padding: 25px 0;
+  background: linear-gradient(135deg, rgba(44, 82, 130, 0.05) 0%, rgba(66, 153, 225, 0.05) 100%);
+  border-top: 3px solid #2c5282;
+  border-bottom: 3px solid #2c5282;
+}
+
+.wechat-theme-business .md-editor-preview h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #2c5282, #4299e1);
+  padding: 12px 25px;
+  margin: 20px 0 15px;
+  border-left: 6px solid #2b6cb0;
+  box-shadow: 0 4px 10px rgba(44, 82, 130, 0.3);
+}
+
+.wechat-theme-business .md-editor-preview h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c5282;
+  margin: 18px 0 10px;
+  padding-left: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  border-left: 3px solid #4299e1;
+}
+
+.wechat-theme-business .md-editor-preview blockquote {
+  border-left: 4px solid #2c5282;
+  background-color: #ebf8ff;
+  color: #2a4e7c;
+  padding: 15px 20px;
+  margin: 15px 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.wechat-theme-business .md-editor-preview strong {
+  color: #2c5282;
+  font-weight: 600;
+}
+
+.wechat-theme-business .md-editor-preview a {
+  color: #2c5282;
+  text-decoration: none;
+  border-bottom: 1px solid #4299e1;
+}
+
+.wechat-theme-business .md-editor-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 15px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.wechat-theme-business .md-editor-preview th,
+.wechat-theme-business .md-editor-preview td {
+  border: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.wechat-theme-business .md-editor-preview th {
+  background-color: #2c5282;
+  color: white;
+  font-weight: 600;
+}
+
+/* ================== Vintage Theme (Retro Brown) ================== */
+.wechat-theme-vintage .md-editor-preview {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #5d4037;
+  line-height: 1.8;
+}
+
+.wechat-theme-vintage .md-editor-preview h1 {
+  font-size: 28px;
+  font-weight: normal;
+  text-align: center;
+  color: #8b5a3c;
+  margin: 25px 0 20px;
+  position: relative;
+  padding: 25px 0;
+  background: linear-gradient(90deg, transparent, rgba(139, 90, 60, 0.1), transparent);
+  border: 2px solid #d7ccc8;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(139, 90, 60, 0.1);
+}
+
+.wechat-theme-vintage .md-editor-preview h2 {
+  font-size: 22px;
+  font-weight: normal;
+  color: #8b5a3c;
+  margin: 20px 0 15px;
+  padding: 15px 0;
+  border-bottom: 3px double #d7ccc8;
+  text-align: center;
+  background: linear-gradient(90deg, transparent, rgba(215, 204, 200, 0.3), transparent);
+}
+
+.wechat-theme-vintage .md-editor-preview h3 {
+  font-size: 20px;
+  font-weight: normal;
+  color: #6d4c41;
+  margin: 18px 0 10px;
+  font-style: italic;
+  padding-left: 30px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #d7ccc8;
+  border-left: 3px solid #8b5a3c;
+}
+
+.wechat-theme-vintage .md-editor-preview blockquote {
+  border: none;
+  background-color: #efebe9;
+  color: #5d4037;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 5px;
+  font-style: italic;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.wechat-theme-vintage .md-editor-preview p {
+  text-indent: 2em;
+  margin-bottom: 16px;
+}
+
+.wechat-theme-vintage .md-editor-preview strong {
+  color: #8b5a3c;
+  font-weight: 600;
+}
+
+.wechat-theme-vintage .md-editor-preview a {
+  color: #8b5a3c;
+  text-decoration: underline;
+  font-style: italic;
 }
 
 /* Common fix for code blocks overflow */
