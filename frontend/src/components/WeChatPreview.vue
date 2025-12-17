@@ -1,8 +1,16 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { Dialog, Button, Space, MessagePlugin, Loading } from 'tdesign-vue-next'
-import { MdPreview } from 'md-editor-v3'
+import { MdPreview, config } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
+import Footnote from 'markdown-it-footnote'
+
+// 配置 markdown-it 扩展以支持脚注
+config({
+  markdownItConfig(md) {
+    md.use(Footnote)
+  }
+})
 
 const props = defineProps({
   visible: {
@@ -119,9 +127,10 @@ const copyToWeChat = async () => {
       }
       
       // Special handling for input checkboxes in task lists
+      // We're replacing them with Unicode symbols, so skip input elements
       if (source.tagName === 'INPUT' && source.type === 'checkbox') {
-         // Mark this element for special handling
-         target.setAttribute('data-task-checkbox', 'true')
+         // Skip input elements as they will be replaced with Unicode symbols
+         return
       }
       
       // Handle the label/text after checkbox
@@ -152,18 +161,7 @@ const copyToWeChat = async () => {
         }
       }
       
-      // Apply special styles after setting the general styles to avoid override
-      if (target.getAttribute('data-task-checkbox') === 'true') {
-         target.style.margin = '0 8px 0 0' // Fix: remove negative left margin
-         target.style.padding = '0'
-         target.style.width = '16px'
-         target.style.height = '16px'
-         target.style.verticalAlign = 'middle'
-         target.style.display = 'inline-block'
-         target.style.position = 'static' // Key: static positioning
-         target.style.top = 'auto' // Key: reset top
-         target.style.float = 'none' // Remove float to avoid layout issues
-      }
+      // Skip applying special styles for input checkboxes as they're replaced with Unicode symbols
     }
     
     applyStyles(previewEl, clone)
@@ -183,8 +181,7 @@ const copyToWeChat = async () => {
     }
 
     // Process task list items with a simpler, more WeChat-compatible approach
-    // Using inline-block elements to ensure checkbox and text stay on the same line
-    // Broadened selector to catch any LI containing a checkbox
+    // Replace input checkboxes with Unicode symbols to avoid WeChat filtering
     const allListItems = wrapper.querySelectorAll('li')
     const taskItems = []
     allListItems.forEach(li => {
@@ -213,24 +210,8 @@ const copyToWeChat = async () => {
        const checkbox = item.querySelector('input[type="checkbox"]')
        if (!checkbox) return
        
-       // Reset LI styles to be more compatible with WeChat
-       item.style.listStyle = 'none'
-       item.style.padding = '0'
-       item.style.margin = '8px 0'
-       item.style.lineHeight = '1.6'
-       item.style.fontSize = '16px'
-       item.style.display = 'block'
-       
-       // Style checkbox for WeChat compatibility - key changes based on user feedback
-       checkbox.style.margin = '0 8px 0 0'
-       checkbox.style.padding = '0'
-       checkbox.style.width = '16px'
-       checkbox.style.height = '16px'
-       checkbox.style.verticalAlign = 'middle' // Key: vertical middle alignment
-       checkbox.style.display = 'inline-block' // Ensure inline-block layout
-       checkbox.style.position = 'static' // Key: cancel relative positioning to avoid misalignment
-       checkbox.style.top = 'auto' // Key: reset top value
-       checkbox.style.float = 'none'
+       // Determine if checkbox is checked
+       const isChecked = checkbox.checked
        
        // Collect all content after checkbox
        const childNodes = Array.from(item.childNodes)
@@ -239,15 +220,25 @@ const copyToWeChat = async () => {
        // Clear the item and rebuild with proper layout
        item.innerHTML = ''
        
-       // Add checkbox first
-       item.appendChild(checkbox)
+       // Create a span for the checkbox symbol
+       const checkboxSymbol = document.createElement('span')
+       checkboxSymbol.textContent = isChecked ? '☑️ ' : '☐ '
+       checkboxSymbol.style.marginRight = '8px'
+       checkboxSymbol.style.fontSize = '16px'
+       checkboxSymbol.style.lineHeight = '1.6'
+       checkboxSymbol.style.display = 'inline-block'
+       checkboxSymbol.style.verticalAlign = 'middle'
+       
+       // Add the checkbox symbol first
+       item.appendChild(checkboxSymbol)
        
        // Create a section wrapper for text content with inline-block display
-       // Use SECTION as requested by user with specific styles
        const textSection = document.createElement('section')
-       textSection.style.display = 'inline-block' // Key: make section inline-block to stay on same line as input
-       textSection.style.verticalAlign = 'middle' // Key: align with input
+       textSection.style.display = 'inline-block' // Key: make section inline-block to stay on same line as symbol
+       textSection.style.verticalAlign = 'middle' // Key: align with symbol
        textSection.style.margin = '0' // Reset default margin
+       textSection.style.lineHeight = '1.6'
+       textSection.style.fontSize = '16px'
        
        // Add all other content to the section
        childNodes.forEach(child => {
@@ -299,16 +290,61 @@ const copyToWeChat = async () => {
        // Add the text section to the item
        item.appendChild(textSection)
        
-       // Final force-apply of checkbox styles to ensure they're not overridden
-       checkbox.style.margin = '0 8px 0 0'
-       checkbox.style.padding = '0'
-       checkbox.style.width = '16px'
-       checkbox.style.height = '16px'
-       checkbox.style.verticalAlign = 'middle'
-       checkbox.style.display = 'inline-block'
-       checkbox.style.position = 'static'
-       checkbox.style.top = 'auto'
-       checkbox.style.float = 'none'
+       // Reset LI styles to be more compatible with WeChat
+       item.style.listStyle = 'none'
+       item.style.padding = '0'
+       item.style.margin = '8px 0'
+       item.style.lineHeight = '1.6'
+       item.style.fontSize = '16px'
+       item.style.display = 'block'
+    })
+
+    // Process footnotes to ensure they render correctly in WeChat
+    const footnotes = wrapper.querySelectorAll('.footnotes')
+    footnotes.forEach(footnote => {
+      // Style the footnotes section
+      footnote.style.marginTop = '30px'
+      footnote.style.paddingTop = '15px'
+      footnote.style.borderTop = '1px solid #eee'
+      footnote.style.fontSize = '14px'
+      footnote.style.color = '#666'
+      
+      // Style the footnote title
+      const title = footnote.querySelector('h2')
+      if (title) {
+        title.style.fontSize = '16px'
+        title.style.marginBottom = '10px'
+        title.style.color = '#333'
+        title.style.borderBottom = '1px solid #eee'
+        title.style.paddingBottom = '5px'
+      }
+      
+      // Style individual footnote items
+      const footnoteItems = footnote.querySelectorAll('ol > li')
+      footnoteItems.forEach(item => {
+        item.style.marginBottom = '8px'
+        item.style.lineHeight = '1.6'
+        
+        // Style the footnote back reference
+        const backRef = item.querySelector('a[href^="#fnref"]')
+        if (backRef) {
+          backRef.style.fontSize = '12px'
+          backRef.style.marginLeft = '5px'
+          backRef.style.textDecoration = 'none'
+          backRef.style.color = '#999'
+        }
+      })
+    })
+    
+    // Process footnote references in the text
+    const footnoteRefs = wrapper.querySelectorAll('a[href^="#fn"]')
+    footnoteRefs.forEach(ref => {
+      ref.style.fontSize = '12px'
+      ref.style.verticalAlign = 'super'
+      ref.style.margin = '0 2px'
+      ref.style.textDecoration = 'none'
+      ref.style.color = '#07c160' // Use theme color
+      ref.style.fontWeight = 'bold'
     })
 
     // Process code blocks to add Mac-style header
@@ -839,6 +875,54 @@ const copyToWeChat = async () => {
   border-bottom: 1px dashed #07c160;
 }
 
+/* Footnote styles for default theme */
+.wechat-theme-default .md-editor-preview .footnotes {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+  font-size: 14px;
+  color: #666;
+}
+
+.wechat-theme-default .md-editor-preview .footnotes h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+  border-left: none;
+  background: none;
+  padding-left: 0;
+}
+
+.wechat-theme-default .md-editor-preview .footnotes ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.wechat-theme-default .md-editor-preview .footnotes li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.wechat-theme-default .md-editor-preview .footnotes a {
+  color: #07c160;
+  text-decoration: none;
+  border-bottom: none;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+.wechat-theme-default .md-editor-preview a[href^="#fn"] {
+  font-size: 12px;
+  vertical-align: super;
+  margin: 0 2px;
+  text-decoration: none;
+  color: #07c160;
+  font-weight: bold;
+  border-bottom: none;
+}
+
 /* ================== Elegant Theme (Purple) ================== */
 .wechat-theme-elegant .md-editor-preview {
   font-family: "Optima", "PingFang SC", serif;
@@ -929,6 +1013,54 @@ const copyToWeChat = async () => {
   border-radius: 4px;
 }
 
+/* Footnote styles for tech theme */
+.wechat-theme-tech .md-editor-preview .footnotes {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid #e5e6eb;
+  font-size: 14px;
+  color: #666;
+}
+
+.wechat-theme-tech .md-editor-preview .footnotes h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #165dff;
+  border-bottom: 1px solid #e5e6eb;
+  padding-bottom: 5px;
+  border-left: none;
+  background: none;
+  padding-left: 0;
+}
+
+.wechat-theme-tech .md-editor-preview .footnotes ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.wechat-theme-tech .md-editor-preview .footnotes li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.wechat-theme-tech .md-editor-preview .footnotes a {
+  color: #165dff;
+  text-decoration: none;
+  border-bottom: none;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+.wechat-theme-tech .md-editor-preview a[href^="#fn"] {
+  font-size: 12px;
+  vertical-align: super;
+  margin: 0 2px;
+  text-decoration: none;
+  color: #165dff;
+  font-weight: bold;
+  border-bottom: none;
+}
+
 /* ================== Warm Theme (Orange) ================== */
 .wechat-theme-warm .md-editor-preview h1 {
   font-size: 22px;
@@ -970,6 +1102,56 @@ const copyToWeChat = async () => {
 .wechat-theme-warm .md-editor-preview strong {
   color: #d46b08;
   border-bottom: 2px solid rgba(250, 140, 22, 0.3);
+}
+
+/* Footnote styles for warm theme */
+.wechat-theme-warm .md-editor-preview .footnotes {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px dashed #fa8c16;
+  font-size: 14px;
+  color: #666;
+}
+
+.wechat-theme-warm .md-editor-preview .footnotes h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #fa8c16;
+  border-bottom: 1px dashed #fa8c16;
+  padding-bottom: 5px;
+  display: block;
+  padding-left: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.wechat-theme-warm .md-editor-preview .footnotes ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.wechat-theme-warm .md-editor-preview .footnotes li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.wechat-theme-warm .md-editor-preview .footnotes a {
+  color: #fa8c16;
+  text-decoration: none;
+  border-bottom: none;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+.wechat-theme-warm .md-editor-preview a[href^="#fn"] {
+  font-size: 12px;
+  vertical-align: super;
+  margin: 0 2px;
+  text-decoration: none;
+  color: #fa8c16;
+  font-weight: bold;
+  border-bottom: none;
 }
 
 /* Common fix for code blocks overflow */

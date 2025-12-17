@@ -5,6 +5,7 @@ import 'md-editor-v3/lib/style.css'
 import { Emoji, Mark, ExportPDF } from '@vavt/v3-extension'
 import '@vavt/v3-extension/lib/asset/style.css'
 import MarkExtension from 'markdown-it-mark'
+import Footnote from 'markdown-it-footnote'
 import { t } from '../i18n'
 import { BrowserOpenURL } from '../../wailsjs/runtime/runtime.js'
 
@@ -12,6 +13,7 @@ import { BrowserOpenURL } from '../../wailsjs/runtime/runtime.js'
 config({
   markdownItConfig(md) {
     md.use(MarkExtension)
+    md.use(Footnote)
   }
 })
 
