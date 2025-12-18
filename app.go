@@ -18,7 +18,7 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
-const AppVersion = "1.0.7"
+const AppVersion = "1.1.0"
 
 // App struct
 type App struct {
