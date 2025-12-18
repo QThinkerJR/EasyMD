@@ -86,7 +86,7 @@ const copyToWeChat = async () => {
       const properties = [
         'color', 'background-color', 'font-size', 'font-family', 'font-weight',
         'line-height', 'text-align', 'border', 'border-radius', 'padding', 
-        'margin', 'box-shadow', 'list-style',
+        'margin', 'box-shadow', 'list-style', 'display',
         'text-decoration', 'background', 'border-left', 'border-right', 'border-top', 'border-bottom'
       ]
       
@@ -849,6 +849,8 @@ const copyToWeChat = async () => {
   margin: 20px 0 15px;
   border-radius: 0 4px 4px 0;
   color: #333;
+  display: table;
+  padding-right: 10px;
 }
 
 .wechat-theme-default .md-editor-preview h3 {
@@ -994,6 +996,8 @@ const copyToWeChat = async () => {
   background: linear-gradient(90deg, rgba(22, 93, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
   padding-top: 8px;
   padding-bottom: 8px;
+  display: table;
+  padding-right: 12px;
 }
 
 .wechat-theme-tech .md-editor-preview h3 {
@@ -1181,13 +1185,14 @@ const copyToWeChat = async () => {
   font-size: 22px;
   font-weight: 400;
   color: #000;
-  margin: 25px 0 15px;
+  margin: 25px auto 15px;
   padding: 12px 20px;
   border-left: 5px solid #000;
   border-right: 5px solid #000;
   text-align: center;
   background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.05) 100%);
   outline: 1px solid #ddd;
+  display: table;
 }
 
 .wechat-theme-minimal .md-editor-preview h3 {
@@ -1394,6 +1399,8 @@ const copyToWeChat = async () => {
   margin: 20px 0 15px;
   border-left: 6px solid #2b6cb0;
   box-shadow: 0 4px 10px rgba(44, 82, 130, 0.3);
+  display: table;
+  padding-right: 25px;
 }
 
 .wechat-theme-business .md-editor-preview h3 {
@@ -1472,11 +1479,12 @@ const copyToWeChat = async () => {
   font-size: 22px;
   font-weight: normal;
   color: #8b5a3c;
-  margin: 20px 0 15px;
-  padding: 15px 0;
+  margin: 20px auto 15px;
+  padding: 15px 15px;
   border-bottom: 3px double #d7ccc8;
   text-align: center;
   background: linear-gradient(90deg, transparent, rgba(215, 204, 200, 0.3), transparent);
+  display: table;
 }
 
 .wechat-theme-vintage .md-editor-preview h3 {

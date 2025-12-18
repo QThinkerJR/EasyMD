@@ -1,8 +1,8 @@
 # EasyMD
 
-EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 的现代化 Markdown 桌面编辑器。支持实时预览、流程图、甘特图、数学公式、代码高亮和 HTML、PDF 导出等丰富功能。
+EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 的现代化 Markdown 桌面编辑器。支持实时预览、流程图、甘特图、数学公式、代码高亮和 HTML、PDF 导出、转微信公众号文章等丰富功能。
 
-<img width="1510" height="813" alt="image" src="https://github.com/user-attachments/assets/cb377d0a-34c0-4606-ba6c-27b2f1e1d0ab" />
+![image](https://github.com/user-attachments/assets/cb377d0a-34c0-4606-ba6c-27b2f1e1d0ab)
 
 ## ✨ 功能特性
 
@@ -13,6 +13,7 @@ EasyMD 是一个基于 [Wails](https://wails.io/) + [Vue 3](https://vuejs.org/) 
 - **代码高亮**: 支持多种编程语言的代码高亮显示。
 - **文件管理**: 支持打开、保存、另存为本地文件。
 - **导出功能**: 支持将文档导出为HTML和PDF。
+- **微信公众号文章转换**: 支持将文档转换为微信公众号可发布的格式，内置多种模版，一键转换，黏贴至微信公众号后台即可。
 
 ## 🛠️ 技术栈
 

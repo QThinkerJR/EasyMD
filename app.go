@@ -88,7 +88,7 @@ func (a *App) OpenFile() (OpenFileResult, error) {
 	}
 
 	if selectedFile == "" {
-		return OpenFileResult{}, fmt.Errorf(texts.NoFileSelected)
+		return OpenFileResult{}, fmt.Errorf("%s", texts.NoFileSelected)
 	}
 
 	content, err := os.ReadFile(selectedFile)
@@ -240,6 +240,7 @@ func buildHTMLTemplate(content string, texts TextResources) string {
         :not(pre) > code { background-color: rgba(27, 31, 35, 0.05); border-radius: 3px; padding: 0.2em 0.4em; }
         
         blockquote { margin: 0; padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; }
+        img { max-width: 100%; box-sizing: border-box; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
         table th { font-weight: 600; background-color: #f6f8fa; }
         table th, table td { padding: 6px 13px; border: 1px solid #dfe2e5; }
