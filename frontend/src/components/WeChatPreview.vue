@@ -789,7 +789,7 @@ const copyToWeChat = async () => {
 }
 
 .preview-mobile-frame {
-  width: 375px; /* Mobile width */
+  width: 500px; /* Increased from 375px for better visibility */
   min-height: 100%;
   background-color: #fff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
